@@ -1,0 +1,43 @@
+spring:
+  jpa:
+    #database-platform: org.hibernate.dialect.H2Dialect
+    #generate-ddl: false
+    show-sql: true
+    properties:
+      hibernate:
+        hbm2ddl:
+          auto: update # 开发环境设置为 update，可选的取值为：create|update|none|validate
+
+  # 数据源
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/tengjiao-part-sample?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver # `com.mysql.cj.jdbc.Drive` for mysql5.7+
+
+    # 1、hikari
+    type: com.zaxxer.hikari.HikariDataSource # spring2.0以上默认就是hikari，这行配置可以省略
+    hikari:
+      #连接池名称，默认HikariPool-1
+      pool-name: KevinHikariPool
+      auto-commit: true
+      #最大连接数，小于等于0会被重置为默认值10；大于零小于1会被重置为minimum-idle的值
+      maximum-pool-size: 16
+      #连接超时时间:毫秒，小于250毫秒，否则被重置为默认值30秒
+      connection-timeout: 60000
+      #最小空闲连接，默认值10，小于0或大于maximum-pool-size，都会重置为maximum-pool-size
+      minimum-idle: 4
+      #空闲连接超时时间，默认值600000（10分钟），大于等于max-lifetime且max-lifetime>0，会被重置为0；不等于0且小于10秒，会被重置为10秒。
+      # 只有空闲连接数大于最大连接数且空闲时间(毫秒)超过该值，才会被释放
+      idle-timeout: 500000
+      #连接最大存活时间.不等于0且小于30秒，会被重置为默认值30分钟.设置应该比mysql设置的超时时间短
+      max-lifetime: 1200000
+      connection-test-query: SELECT 1
+
+
+# 以下为自定义属性
+config:
+  # 这种格式仅在Idea下运行时才能找到正确目录
+  #path: ./tengjiao-part-samples/tengjiao-part-sample-ssj/src/main/resources/setting.properties
+  # 这种格式仅在Idea下单元测试运行时才能找到正确目录
+  path: ./src/main/resources/setting.properties

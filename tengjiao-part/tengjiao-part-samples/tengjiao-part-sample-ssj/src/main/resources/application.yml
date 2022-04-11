@@ -1,0 +1,48 @@
+server:
+  port: 8080
+
+spring:
+  main:
+    lazy-initialization: false # 延时加载 springboot 2.2+ 特性
+    banner-mode: off
+  profiles:
+    active: dev # 环境 dev|test|prod
+  application:
+    name: tengjiao-part-sample-ssj
+  output:
+    ansi:
+      enabled: always
+
+  transaction:
+    rollback-on-commit-failure: true # 开启事务失败回滚
+
+  mvc:
+    throw-exception-if-no-handler-found: true #出现错误时, 直接抛出异常
+    view:
+      suffix: .html
+    # 静态资源访问路径
+    static-path-pattern: /**
+
+  resources:
+    # 静态资源默认存放位置
+    #static-locations: classpath:/META-INF/resources/, classpath:/resources/, classpath:/static/, classpath:/public/
+    # 如果工程仅仅作为服务接口可以关闭模板映射 (jsp/ftl/vm/...)
+    add-mappings: false
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5InnoDBDialect
+        current_session_context_class: org.springframework.orm.hibernate5.SpringSessionContext
+    hibernate:
+      naming:
+        # 自动将实体属性驼峰命名在表结构中转为下划线形式（默认）：org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+        # 实体属性驼峰不转表字段下划线使用： org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy

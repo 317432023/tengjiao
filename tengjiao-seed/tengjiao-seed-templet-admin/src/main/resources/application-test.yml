@@ -1,0 +1,30 @@
+spring:
+
+  redis: # 依赖 spring-boot-starter-data-redis
+    host: localhost
+    port: 6379
+    #password: 15bc104021ea44258202381e32be4cca
+    database: 0 # Redis默认情况下有16个分片，这里配置具体使用的分片，默认是0
+
+    timeout: 10000 #连接超时时间（毫秒）
+
+    jedis: # Jedis
+      pool:
+        max-active: 8 # 最大连接数（使用负值表示没有限制） 默认 8
+        max-wait: -1 # 最大阻塞等待时间（使用负值表示没有限制） 默认 -1
+        max-idle: 8 # 最大空闲连接 默认 8
+        min-idle: 0 # 最小空闲连接 默认 0
+
+  # 数据源
+  datasource:
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+    url: jdbc:p6spy:mysql://${spring.redis.host}:3306/tengjiao-seed-admin?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true
+    password: root
+    username: root
+
+mybatis-plus:
+  configuration:
+    # (开发测试)开启或关闭(生产)控制台sql打印；如果已经使用p6spy就没必要配置它打印SQL了(关闭它)，因为p6spy更好用
+    # 关闭方法：log-impl设置为空或删除配置即可；
+    # 开启方法：log-impl值设置为org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: #org.apache.ibatis.logging.stdout.StdOutImpl

@@ -1,0 +1,75 @@
+server:
+
+  tomcat:
+    min-spare-threads: 30      # 线程池的最小备用线程数，tomcat启动时的初始化的线程数
+    max-threads: 1000          # 线程池的最大线程数
+    max-connections: 5000      # 最大连接数
+    accept-count: 2000         # 排队数
+    connection-timeout: 5000ms # 最长等待时间
+
+spring:
+
+  redis: # 依赖 spring-boot-starter-data-redis
+    host: localhost
+    port: 6379
+    #password: 15bc104021ea44258202381e32be4cca
+    database: 0 # Redis默认情况下有16个分片，这里配置具体使用的分片，默认是0
+
+    timeout: 10000 #连接超时时间（毫秒）
+
+    jedis: # Jedis
+      pool:
+        max-active: 8 # 最大连接数（使用负值表示没有限制） 默认 8
+        max-wait: -1 # 最大阻塞等待时间（使用负值表示没有限制） 默认 -1
+        max-idle: 8 # 最大空闲连接 默认 8
+        min-idle: 0 # 最小空闲连接 默认 0
+
+  # 缓存策略
+  cache: # 依赖spring-boot-starter-cache；由 @EnableCaching 开启，支持@CachePut | @CacheEvict | @Cacheable
+    type: redis
+    redis:
+      time-to-live: 3600s
+
+  # 会话存储策略
+  session: # 依赖spring-session-core；由 @EnableRedisHttpSession 开启
+    store-type: redis # redis 或 jdbc
+    timeout: 3600s
+    redis: # 依赖spring-session-data-redis 与 spring-boot-starter-data-redis
+      cleanup-cron: 0 */30 * * * ? # 半小时清理session,cron表达式可以自行百度
+
+  # 数据源
+  datasource:
+    url: jdbc:mysql://${spring.redis.host}:3306/tengjiao-seed-admin?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver # `com.mysql.cj.jdbc.Drive` for mysql5.7+
+
+    # 1、hikari
+    type: com.zaxxer.hikari.HikariDataSource # spring2.0以上默认就是hikari，这行配置可以省略
+    hikari:
+      #连接池名称，默认HikariPool-1
+      pool-name: KevinHikariPool
+      auto-commit: true
+      #最大连接数，小于等于0会被重置为默认值10；大于零小于1会被重置为minimum-idle的值
+      maximum-pool-size: 16
+      #连接超时时间:毫秒，小于250毫秒，否则被重置为默认值30秒
+      connection-timeout: 60000
+      #最小空闲连接，默认值10，小于0或大于maximum-pool-size，都会重置为maximum-pool-size
+      minimum-idle: 4
+      #空闲连接超时时间，默认值600000（10分钟），大于等于max-lifetime且max-lifetime>0，会被重置为0；不等于0且小于10秒，会被重置为10秒。
+      # 只有空闲连接数大于最大连接数且空闲时间(毫秒)超过该值，才会被释放
+      idle-timeout: 500000
+      #连接最大存活时间.不等于0且小于30秒，会被重置为默认值30分钟.设置应该比mysql设置的超时时间短
+      max-lifetime: 1200000
+      connection-test-query: SELECT 1
+
+mybatis-plus:
+  configuration:
+    # (开发测试)开启或关闭(生产)控制台sql打印；如果已经使用p6spy就没必要配置它打印SQL了(关闭它)，因为p6spy更好用
+    # 关闭方法：log-impl设置为空或删除配置即可；
+    # 开启方法：log-impl值设置为org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: #org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 以下为自定义属性
+config:
+  setting: ./config/setting.properties

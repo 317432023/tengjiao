@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Configuration后面的status，这个用于设置log4j2自身内部的信息输出，可以不设置，当设置成trace时，你会看到log4j2内部各种详细输出-->
+<!--monitorInterval：Log4j能够自动检测修改配置 文件和重新配置本身，设置间隔秒数-->
+<configuration monitorInterval="5">
+    <!-- 日志级别以及优先级排序: OFF > FATAL > ERROR > WARN > INFO > DEBUG > TRACE > ALL -->
+    <!-- PatternLayout 参数配置 -->
+    <!--
+        %d{yyyy-MM-dd HH:mm:ss, SSS} : 日志生产时间,输出到毫秒的时间
+        %-5level : 输出日志级别，-5表示左对齐并且固定输出5个字符，如果不足在右边补0
+        %c : logger的名称(%logger)
+        %t : 输出当前线程名称
+        %p : 日志输出格式
+        %m : 日志内容，即 logger.info("message")
+        %n : 换行符
+        %C : Java类名(%F)
+        %L : 行号
+        %M : 方法名
+        %l : 输出语句所在的行数, 包括类名、方法名、文件名、行数
+        hostName : 本地机器名
+        hostAddress : 本地ip地址
+     -->
+    <!--变量配置-->
+    <Properties>
+        <!-- 应用名称 -->
+        <!-- 生产环境value设置成 ${sys:serverId} 同时在启动时设置 -DserverId=应用名称 -->
+        <!--<Property name="log.app_name" value="tengjiao-seed-admin"/>-->
+        <Property name="log.app_name" value="${ctx:appName}"/>
+        <!--日志编码-->
+        <Property name="log.charset" value="utf-8"/>
+        <!-- 定义日志存储的路径 -->
+        <Property name="log.home_dir" value="/data/applogs/${log.app_name}_${ctx:ip}_${ctx:port}/logs"/>
+        <!-- 日志级别 -->
+        <Property name="log.rootLevel" value="info"/>
+        <!-- 最多同一文件夹下多少个日志文件循环覆盖，默认7个 -->
+        <Property name="log.maxNum" value="15"/>
+        <!-- 单个日志文件大小 -->
+        <Property name="log.maxSize" value="10MB"/>
+        <!-- 格式化输出：%date表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度 %msg：日志消息，%n是换行符-->
+        <!-- %logger{36} 表示 Logger 名字最长36个字符 -->
+        <Property name="log.pattern" value="%date{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+        <!-- 打印sql语句 需要指定dao/mapper层包的位置 -->
+        <Property name="mapper.package" value="starter.tinymis.api.module.sys.mapper"/>
+    </Properties>
+
+    <Appenders>
+
+        <Console name="Console" target="SYSTEM_OUT">
+            <!--只输出level及其以上级别的信息（onMatch），其他的直接拒绝（onMismatch）-->
+            <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY"/>
+            <!--输出日志的格式-->
+            <PatternLayout pattern="${log.pattern}" charset="${log.charset}"/>
+        </Console>
+
+        <!--文件会打印出所有信息，这个log每次运行程序会自动清空，由append属性决定，适合临时测试用-->
+        <File name="Filelog" fileName="${log.home_dir}/test.log" append="false">
+            <PatternLayout pattern="${log.pattern}" charset="${log.charset}"/>
+        </File>
+
+        <!-- 这个会打印出所有的info及以下级别的信息，每次大小超过size，则这size大小的日志会自动存入按年份-月份建立的文件夹下面并进行压缩，作为存档-->
+        <RollingFile name="RollingFileInfo" fileName="${log.home_dir}/info.log"
+                     filePattern="${log.home_dir}/${log.app_name}-INFO-%d{yyyy-MM-dd}_%i.log.gz">
+            <!--只输出level及以上级别的信息（onMatch），其他的直接拒绝（onMismatch）-->
+            <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="${log.pattern}" charset="${log.charset}"/>
+            <Policies>
+                <!--interval属性用来指定多久滚动一次，默认是1 hour-->
+                <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="${log.maxSize}"/>
+            </Policies>
+            <!-- DefaultRolloverStrategy属性如不设置，则默认为最多同一文件夹下7个文件开始覆盖-->
+            <DefaultRolloverStrategy max="15"/>
+        </RollingFile>
+
+        <!-- 这个会打印出所有的warn及以下级别的信息，每次大小超过size，则这size大小的日志会自动存入按年份-月份建立的文件夹下面并进行压缩，作为存档-->
+        <RollingFile name="RollingFileWarn" fileName="${log.home_dir}/warn.log"
+                     filePattern="${log.home_dir}/${log.app_name}-WARN-%d{yyyy-MM-dd}_%i.log.gz">
+            <!--只输出level及以上级别的信息（onMatch），其他的直接拒绝（onMismatch）-->
+            <ThresholdFilter level="warn" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="${log.pattern}" charset="${log.charset}"/>
+            <Policies>
+                <!--interval属性用来指定多久滚动一次，默认是1 hour-->
+                <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="${log.maxSize}"/>
+            </Policies>
+            <!-- DefaultRolloverStrategy属性如不设置，则默认为最多同一文件夹下7个文件开始覆盖-->
+            <DefaultRolloverStrategy max="15"/>
+        </RollingFile>
+
+        <!-- 这个会打印出所有的error及以下级别的信息，每次大小超过size，则这size大小的日志会自动存入按年份-月份建立的文件夹下面并进行压缩，作为存档-->
+        <RollingFile name="RollingFileError" fileName="${log.home_dir}/error.log"
+                     filePattern="${log.home_dir}/${log.app_name}-ERROR-%d{yyyy-MM-dd}_%i.log.gz">
+            <!--只输出level及以上级别的信息（onMatch），其他的直接拒绝（onMismatch）-->
+            <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="${log.pattern}" charset="${log.charset}"/>
+            <Policies>
+                <!--interval属性用来指定多久滚动一次，默认是1 hour-->
+                <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="${log.maxSize}"/>
+            </Policies>
+            <DefaultRolloverStrategy max="${log.maxNum}"/>
+        </RollingFile>
+
+    </Appenders>
+
+    <!--Logger节点用来单独指定日志的形式，比如要为指定包下的class指定不同的日志级别等。-->
+    <!--然后定义Loggers，只有定义了logger并引入的appender，appender才会生效-->
+    <Loggers>
+
+        <!--过滤掉spring和mybatis的一些无用的DEBUG信息-->
+        <Logger name="org.mybatis" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <!--若是additivity设为false，则 子Logger 只会在自己的appender里输出，而不会在 父Logger 的appender里输出。-->
+        <Logger name="org.springframework" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- dao层包下的类的日志输出（生产环境最好要关闭）-->
+        <!--<Logger name="${mapper.package}" level="debug" additivity="false">
+            <AppenderRef ref="Filelog"/>
+            <AppenderRef ref="RollingFileError"/>
+            &lt;!&ndash; 控制台输出日志 &ndash;&gt;
+            <AppenderRef ref="Console"/>
+        </Logger>-->
+
+        <Root level="${log.rootLevel}">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="Filelog"/>
+            <AppenderRef ref="RollingFileInfo"/>
+            <AppenderRef ref="RollingFileWarn"/>
+            <AppenderRef ref="RollingFileError"/>
+        </Root>
+    </Loggers>
+
+</configuration>

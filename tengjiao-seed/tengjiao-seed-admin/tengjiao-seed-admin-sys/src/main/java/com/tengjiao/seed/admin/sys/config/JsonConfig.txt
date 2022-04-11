@@ -1,0 +1,31 @@
+    SpringBoot js页面读取JSON损失精度的解决方案
+
+
+方法一
+spring:
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+    generator:
+      write_numbers_as_strings: true # 将数值类型转换为字符串，解决long型精度丢失
+方法二
+@JsonSerialize(using=ToStringSerializer.class)
+private Long id;
+
+方法三
+@Bean("jackson2ObjectMapperBuilderCustomizer")
+public Jackson2ObjectMapperBuilderCustomizer jackson2ObjectMapperBuilderCustomizer() {
+    Jackson2ObjectMapperBuilderCustomizer customizer = new Jackson2ObjectMapperBuilderCustomizer() {
+        @Override
+        public void customize(Jackson2ObjectMapperBuilder jacksonObjectMapperBuilder) {
+            jacksonObjectMapperBuilder.serializerByType(Long.class, ToStringSerializer.instance)
+                    .serializerByType(Long.TYPE, ToStringSerializer.instance);
+        }
+    };
+    return customizer;
+}
+
+方法四
+https://www.jianshu.com/p/f46699ea331a

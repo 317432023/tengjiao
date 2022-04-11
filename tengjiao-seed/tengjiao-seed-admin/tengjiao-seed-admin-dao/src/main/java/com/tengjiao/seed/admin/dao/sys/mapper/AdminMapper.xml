@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tengjiao.seed.admin.dao.sys.mapper.AdminMapper">
+
+  <!-- 通用查询映射结果 -->
+  <resultMap id="BaseResultMap" type="com.tengjiao.seed.admin.model.sys.entity.Admin">
+    <id column="id" property="id"/>
+    <result column="username" property="username"/>
+    <result column="password" property="password"/>
+    <result column="salt" property="salt"/>
+    <result column="dept_id" property="deptId"/>
+    <result column="station_id" property="stationId"/>
+    <result column="create_time" property="createTime"/>
+    <result column="update_time" property="updateTime"/>
+    <result column="gender" property="gender"/>
+    <result column="nickname" property="nickname"/>
+    <result column="avatar" property="avatar"/>
+    <result column="birth" property="birth"/>
+    <result column="email" property="email"/>
+    <result column="phone" property="phone"/>
+    <result column="disabled" property="disabled"/>
+  </resultMap>
+
+  <sql id="Base_Column_List">
+      id,
+      username,
+      password,
+      salt,
+      dept_id,
+      station_id,
+      create_time,
+      update_time,
+      gender,
+      nickname,
+      avatar,
+      birth,
+      email,
+      phone,
+      disabled
+  </sql>
+
+  <select id="page" resultType="com.tengjiao.seed.admin.model.sys.pojo.AdminDo">
+      select
+        a.id,
+        a.username,
+        a.salt,
+        a.dept_id,
+        a.station_id,
+        a.create_time,
+        a.update_time,
+        a.gender,
+        a.nickname,
+        a.avatar,
+        a.birth,
+        a.email,
+        a.phone,
+        b.name as station_name,
+        a.disabled
+      from sys_admin a
+      inner join sys_station b
+      on a.station_id = b.id
+      ${ew.customSqlSegment}
+  </select>
+
+
+  <resultMap id="adminDoResultMap" type="com.tengjiao.seed.admin.model.sys.pojo.AdminDo" extends="BaseResultMap">
+    <!-- 增加的属性 -->
+    <result column="station_name" property="stationName"/>
+    <collection property="roleIds" ofType="java.lang.Integer">
+      <result column="rid"/>
+    </collection>
+  </resultMap>
+  <select id="listWithRoles" resultMap="adminDoResultMap">
+    select
+      a.id,
+      a.username,
+      a.salt,
+      a.dept_id,
+      a.station_id,
+      a.create_time,
+      a.update_time,
+      a.gender,
+      a.nickname,
+      a.avatar,
+      a.birth,
+      a.email,
+      a.phone,
+      b.name as station_name,/*,c.name as dept_name*/
+      a.disabled,
+      ar.rid
+    from sys_admin a
+
+    left join sys_station b on a.station_id=b.id
+    left join sys_admin_role ar on a.id = ar.aid
+    left join sys_role r on ar.rid = r.id and r.station_id = a.station_id and r.disabled = 0
+
+    where 1=1
+    <if test="dto != null">
+      <if test="dto.id != null">
+        and a.id = #{dto.id}
+      </if>
+      <if test="dto.username != null and dto.username != ''">
+        and username like concat(#{dto.username,jdbcType=VARCHAR}, '%')
+      </if>
+      <if test="dto.nickname != null and dto.nickname != ''">
+        and nickname like concat(#{dto.nickname,jdbcType=VARCHAR}, '%')
+      </if>
+      <if test="dto.email != null and dto.email != ''">
+        and email like concat(#{dto.email,jdbcType=VARCHAR}, '%')
+      </if>
+      <if test="dto.phone != null and dto.phone != ''">
+        and phone like concat(#{dto.phone,jdbcType=VARCHAR}, '%')
+      </if>
+      <if test="dto.stationId!=null">
+        and a.station_id = #{dto.stationId,jdbcType=INTEGER}
+      </if>
+      <if test="dto.disabled!=null">
+        and a.disabled = #{dto.disabled,jdbcType=INTEGER}
+      </if>
+    </if>
+  </select>
+
+  <select id="list" resultType="com.tengjiao.seed.admin.model.sys.pojo.AdminDo">
+    select
+      a.id,
+      a.username,
+      a.salt,
+      a.dept_id,
+      a.station_id,
+      a.create_time,
+      a.update_time,
+      a.gender,
+      a.nickname,
+      a.avatar,
+      a.birth,
+      a.email,
+      a.phone,
+      b.name as station_name,/*c.name as dept_name,*/
+      a.disabled
+    from sys_admin a
+
+    inner join sys_station b on a.station_id=b.id
+
+    <!--inner join sys_dept c on a.dept_id=c.id-->
+
+    where 1=1
+    <if test="dto != null">
+      <if test="dto.id != null">
+        and a.id = #{dto.id}
+      </if>
+      <if test="dto.username != null and dto.username != ''">
+        and username like concat(#{dto.username,jdbcType=VARCHAR},'%')
+      </if>
+      <if test="dto.nickname != null and dto.nickname != ''">
+        and nickname like concat(#{dto.nickname,jdbcType=VARCHAR},'%')
+      </if>
+      <if test="dto.email != null and dto.email != ''">
+        and email like concat(#{dto.email,jdbcType=VARCHAR},'%')
+      </if>
+      <if test="dto.phone != null and dto.phone != ''">
+        and phone like concat(#{dto.phone,jdbcType=VARCHAR},'%')
+      </if>
+      <if test="dto.stationId!=null">
+        and station_id = #{dto.stationId,jdbcType=INTEGER}
+      </if>
+      <if test="dto.disabled!=null">
+        and a.disabled = #{dto.disabled,jdbcType=INTEGER}
+      </if>
+      <!--
+      <if test="dto.deptId!=null">
+        and dept_id = #{dto.deptId,jdbcType=INTEGER}
+      </if>-->
+    </if>
+  </select>
+
+  <delete id="deleteAdminRoleByAid">
+    delete from sys_admin_role where aid=#{aid}
+  </delete>
+  <insert id="insertAdminRoleIds">
+    insert into sys_admin_role(aid,rid) values
+    <foreach collection="roleIds" item="rid" index="index" separator=",">
+     ( #{aid}, #{rid} )
+    </foreach>
+  </insert>
+
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <artifactId>tengjiao</artifactId>
+    <groupId>com.tengjiao</groupId>
+    <version>1.0.1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>tengjiao-assembly</artifactId>
+  <version>1.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>tengjiao-assembly-upload</module>
+    <!--<module>tengjiao-assembly-samples</module>-->
+    <module>tengjiao-assembly-captcha</module>
+    <module>tengjiao-assembly-sms</module>
+  </modules>
+
+  <!-- 子模块继承之后，提供作用：锁定版本+子module不用写groupId和version  -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springboot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>

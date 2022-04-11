@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <artifactId>tengjiao</artifactId>
+    <groupId>com.tengjiao</groupId>
+    <version>1.0.1-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>tengjiao-part</artifactId>
+  <version>1.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>tengjiao-part-jpa</module>
+    <module>tengjiao-part-springmvc</module>
+    <module>tengjiao-part-redis</module>
+    <!--<module>tengjiao-part-samples</module>-->
+    <module>tengjiao-part-tkmybatis</module>
+    <module>tengjiao-part-mybatis</module>
+    <module>tengjiao-part-mybatisplus</module>
+    <module>tengjiao-part-springboot</module>
+    <module>tengjiao-part-wx</module>
+  </modules>
+
+</project>

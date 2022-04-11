@@ -1,0 +1,62 @@
+spring:
+
+  redis: # 依赖 spring-boot-starter-data-redis
+    host: localhost
+    port: 6379
+    #password: 15bc104021ea44258202381e32be4cca
+    database: 0 # Redis默认情况下有16个分片，这里配置具体使用的分片，默认是0
+
+    timeout: 10000 #连接超时时间（毫秒）
+
+    jedis: # Jedis
+      pool:
+        max-active: 8 # 最大连接数（使用负值表示没有限制） 默认 8
+        max-wait: -1 # 最大阻塞等待时间（使用负值表示没有限制） 默认 -1
+        max-idle: 8 # 最大空闲连接 默认 8
+        min-idle: 0 # 最小空闲连接 默认 0
+
+  h2:
+    console:
+      enabled: true # 是否启用控制台
+      path: /h2-console # 控制台可用路径
+
+  # 数据源
+  datasource:
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver # 一般使用 org.h2.Driver，这儿使用了p6spy 做代理
+    # 文件模式 file:./<dbname>；内存模式 mem:<dbname>
+    url: jdbc:p6spy:h2:mem:tengjiao-seed-admin;TRACE_LEVEL_FILE=0;MODE=MYSQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;
+    username: sa
+    password: 9527
+
+    initialization-mode: always # Spring Boot2.x 必须添加 initialization-mode配置才会执行 always为始终执行初始化，embedded只初始化内存数据库（默认值）,如h2等，never为不执行初始化
+    continue-on-error: false # 遇到语句错误时是否继续
+
+    # 加载 schema-${platform}.sql文件，或者data-${platform}.sql
+    platform: h2
+    # 启动时需要初始化的建表语句
+    schema: classpath:db/schema-h2.sql # 多个sql文件，可以用逗号分隔
+    # 初始化的数据
+    data: classpath:db/data-h2.sql
+    sql-script-encoding: utf-8
+    separator: ;
+
+    ## 执行schema.sql或者data.sql时，用的用户。一般在 mysql、oracle、sqlserver 数据库中才会用到
+    #data-username:
+    #data-password:
+    #schema-username:
+    #schema-password:
+
+mybatis-plus:
+  configuration:
+    # (开发测试)开启或关闭(生产)控制台sql打印；如果已经使用p6spy就没必要配置它打印SQL了(关闭它)，因为p6spy更好用
+    # 关闭方法：log-impl设置为空或删除配置即可；
+    # 开启方法：log-impl值设置为org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: #org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  config: classpath:log4j2-spring.xml
+
+# 以下为自定义属性
+config:
+  setting: ./tengjiao-seed/tengjiao-seed-admin/tengjiao-seed-admin-sample/src/main/resources/setting.properties # 这种格式仅在Idea下运行时才能找到正确目录
+  #setting: ./src/main/resources/setting.properties # 这种格式仅在Idea下运行测试案例时才能找到正确目录

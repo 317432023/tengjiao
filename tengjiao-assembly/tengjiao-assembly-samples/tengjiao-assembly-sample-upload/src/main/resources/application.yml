@@ -1,0 +1,20 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: tengjiao-assembly-sample-upload
+  servlet:
+    multipart:
+      max-file-size: 5MB # 单个文件大小
+      max-request-size: 50MB # 总文件大小
+# 以下为自定义属性
+config:
+  upload: ./tengjiao-assembly-sample-upload/src/main/resources/config/upload.properties # 这种格式仅在Idea下运行时才能找到正确目录
+  #upload: ./src/main/resources/config/upload.properties # 这种格式仅在Idea下测试运行时才能找到正确目录
+  #upload: ./config/upload.properties # 生产模式
+
+
+pub:
+  # 静态资源域名或路径
+  staticPrefix: #http://localhost

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tengjiao.seed.admin.dao.sys.mapper.StationMapper">
+
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.tengjiao.seed.admin.model.sys.entity.Station">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="domain" property="domain" />
+        <result column="kf_qq" property="kfQq" />
+        <result column="region_id" property="regionId" />
+        <result column="region_name" property="regionName" />
+        <result column="disabled" property="disabled" />
+        <result column="expire_time" property="expireTime" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, domain, kf_qq, region_id, region_name, disabled, expire_time, create_time
+    </sql>
+
+
+</mapper>

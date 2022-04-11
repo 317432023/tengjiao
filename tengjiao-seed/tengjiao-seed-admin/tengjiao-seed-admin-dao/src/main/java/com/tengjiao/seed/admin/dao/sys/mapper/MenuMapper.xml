@@ -1,0 +1,245 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tengjiao.seed.admin.dao.sys.mapper.MenuMapper">
+
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.tengjiao.seed.admin.model.sys.entity.Menu">
+        <id column="id" property="id" />
+        <result column="pid" property="pid" />
+        <result column="name" property="name" />
+        <result column="icon" property="icon" />
+        <result column="type" property="type" />
+        <result column="path" property="path" />
+        <result column="perm" property="perm" />
+        <result column="pattern" property="pattern" />
+        <result column="open" property="open" />
+        <result column="disabled" property="disabled" />
+        <result column="hidden" property="hidden" />
+        <result column="sort_num" property="sortNum" />
+        <result column="title" property="title" />
+        <result column="breadcrumb" property="breadcrumb" />
+        <result column="affix" property="affix" />
+        <result column="no_cache" property="noCache" />
+        <result column="active_menu" property="activeMenu" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, pid, name, icon, type, path, perm, pattern, open, disabled, sort_num, title, breadcrumb, affix, no_cache, active_menu, create_time, update_time
+    </sql>
+
+    <resultMap id="MenuRolesMap" type="com.tengjiao.seed.admin.model.sys.pojo.MenuRolesDo">
+        <id column="mid" property="mid" />
+        <result column="type" property="type" />
+        <result column="pattern" property="pattern" />
+        <result column="perm" property="perm" />
+        <collection property="roles" ofType="com.tengjiao.seed.admin.model.sys.entity.Role">
+            <result column="id" property="id"/>
+            <result column="name" property="name"/>
+        </collection>
+    </resultMap>
+
+    <!-- 查询所有菜单有对应有权限的的角色 -->
+    <select id="selectAllMenuRoles" resultMap="MenuRolesMap">
+        select m.id mid,m.type,m.pattern,m.perm,r.id,r.name from sys_menu m
+        left join sys_role_menu rm on m.id=rm.mid
+        left join sys_role r on rm.rid=r.id and r.disabled=0
+    </select>
+
+    <resultMap id="RoutesMap" type="com.tengjiao.seed.admin.model.security.pojo.RouteDo">
+        <id column="id" property="id" />
+        <result column="pid" property="pid" />
+        <result column="name" property="name" />
+        <result column="type" property="type" />
+        <result column="path" property="path" />
+        <result column="pattern" property="pattern" />
+        <result column="open" property="open" />
+        <result column="disabled" property="disabled" />
+        <result column="hidden" property="hidden" />
+        <result column="sort_num" property="sortNum" />
+        <result column="icon" property="icon" />
+        <result column="title" property="title" />
+        <result column="breadcrumb" property="breadcrumb" />
+        <result column="affix" property="affix" />
+        <result column="no_cache" property="noCache" />
+        <result column="active_menu" property="activeMenu" />
+        <collection property="perm" ofType="java.lang.String">
+            <result column="perm"/>
+        </collection>
+    </resultMap>
+    <select id="loadRoutes" resultMap="RoutesMap">
+
+      select m.*,m1.perm from(
+        SELECT
+          id,
+          pid,
+          name,
+          icon,
+          type,
+          path,
+          pattern,
+          open,
+          disabled,
+          hidden,
+          sort_num,
+          title,
+          breadcrumb,
+          affix,
+          no_cache,
+          active_menu
+        FROM sys_menu
+        where type in(0,2)
+      ) m LEFT JOIN (
+        SELECT
+          id,
+          pid,
+          perm
+        FROM sys_menu
+        where type=1
+      ) m1 ON (m1.id=m.id or m1.pid = m.id)
+      order by m.pid, m.sort_num
+
+    </select>
+    <!-- 查询用户路由与权限 -->
+    <select id="loadRoutesByAdminId" resultMap="RoutesMap">
+
+        select m.*,m1.perm from(
+          SELECT
+                id,
+                pid,
+                name,
+                icon,
+                type,
+                path,
+                pattern,
+                open,
+                disabled,
+                hidden,
+                sort_num,
+                title,
+                breadcrumb,
+                affix,
+                no_cache,
+                active_menu
+          FROM sys_menu
+          where type in(0,2) and id IN(
+            SELECT DISTINCT mid
+              FROM sys_role_menu
+              WHERE rid IN
+              <!-- 用户拥有的角色s -->
+              (SELECT rid FROM sys_admin_role LEFT JOIN sys_role ON sys_role.id = sys_admin_role.rid WHERE sys_admin_role.aid = #{adminId}  AND sys_role.disabled = 0)
+          )
+        ) m LEFT JOIN (
+          SELECT
+                id,
+                pid,
+                perm
+          FROM sys_menu
+          where type=1 and id IN(
+            SELECT DISTINCT mid
+              FROM sys_role_menu
+              WHERE rid IN
+              <!-- 用户拥有的角色s -->
+              (SELECT rid FROM sys_admin_role LEFT JOIN sys_role ON sys_role.id = sys_admin_role.rid WHERE sys_admin_role.aid = #{adminId} AND sys_role.disabled = 0)
+          )
+        ) m1 ON (m1.id=m.id or m1.pid = m.id)
+        order by m.pid, m.sort_num
+
+    </select>
+
+    <!-- 查询角色路由与权限 -->
+    <select id="loadRoutesByRoleIds" resultMap="RoutesMap">
+
+        select m.*,m1.perm from(
+          SELECT
+                id,
+                pid,
+                name,
+                icon,
+                type,
+                path,
+                pattern,
+                open,
+                disabled,
+                hidden,
+                sort_num,
+                title,
+                breadcrumb,
+                affix,
+                no_cache,
+                active_menu
+          FROM sys_menu
+          where type in(0,2) and id IN(
+            SELECT DISTINCT mid
+              FROM sys_role_menu
+              WHERE rid IN
+              <!-- 角色ID -->
+              <foreach collection="array" item="id" index="index" open="(" close=")" separator=",">
+                #{id}
+              </foreach>
+          )
+        ) m LEFT JOIN (
+          SELECT
+                id,
+                pid,
+                perm
+          FROM sys_menu
+          where type=1 and id IN(
+            SELECT DISTINCT mid
+              FROM sys_role_menu
+              WHERE rid IN
+              <!-- 角色ID -->
+              <foreach collection="array" item="id" index="index" open="(" close=")" separator=",">
+                #{id}
+              </foreach>
+          )
+        ) m1 ON (m1.id=m.id or m1.pid = m.id)
+        order by m.pid, m.sort_num
+
+    </select>
+
+    <!-- 查询菜单列表 -->
+    <select id="loadMenusByRoleIds" resultType="com.tengjiao.seed.admin.model.security.pojo.MenuVo">
+
+        select
+          m.id,
+          m.pid,
+          m.title as menu_name,
+          m.path as url,
+          m.icon,
+          m.type,
+          m.sort_num,
+          m.open,
+          if(m.disabled=0,true,false) as disabled
+        from sys_menu m
+        inner join sys_role_menu rm on m.id = rm.mid
+        inner join sys_role r on r.id = rm.rid
+        where r.id in
+        <!-- 用户拥有的角色ID -->
+        <foreach collection="array" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        and m.type in(0,2)
+        order by m.sort_num asc
+    </select>
+
+    <!-- 查询菜单树（可以包含菜单项） -->
+    <select id="menuTree" resultType="com.tengjiao.seed.admin.model.sys.pojo.MenuTreeVo">
+        select
+          m.id,
+          m.pid,
+          /*IF(m.title is not null and trim(m.title)!='',trim(m.title),m.name) as label*/ <!-- h2 不支持if函数 -->
+          m.title as label
+        from sys_menu m
+        <where>
+            <if test=" excludesPerm != null &amp;&amp; excludesPerm ">
+                m.type in (0,2)
+            </if>
+        </where>
+        order by m.sort_num, m.pid asc
+    </select>
+</mapper>

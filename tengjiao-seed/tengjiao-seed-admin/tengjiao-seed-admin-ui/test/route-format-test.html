@@ -1,0 +1,165 @@
+﻿<script>
+let rawRoutes =
+[
+  {"id":1,"pid":0,"name":"Dashboard","type":0,"path":"/dashboard","pattern":"/dashboard","open":0,"disabled":0,"hidden":null,"sortNum":0,"icon":"el-icon-setting","title":"首页","breadcrumb":1,"affix":0,"noCache":0,"activeMenu":null,"perm":[]},
+  {"id":2,"pid":0,"name":"System","type":2,"path":"/system","pattern":null,"open":1,"disabled":0,"hidden":null,"sortNum":1,"icon":"el-icon-help","title":"系统管理","breadcrumb":1,"affix":0,"noCache":0,"activeMenu":null,"perm":[]},
+  {"id":18,"pid":2,"name":"Menu","type":0,"path":"/menu","pattern":"/menu/query/**","open":0,"disabled":0,"hidden":null,"sortNum":0,"icon":"el-icon-platform-eleme","title":"菜单列表","breadcrumb":1,"affix":0,"noCache":0,"activeMenu":null,"perm":["menu:mod","menu:add"]},
+  {"id":3,"pid":2,"name":"Config","type":0,"path":"/config","pattern":"/config/query/**","open":0,"disabled":0,"hidden":null,"sortNum":1,"icon":"el-icon-setting","title":"系统配置","breadcrumb":1,"affix":0,"noCache":0,"activeMenu":null,"perm":["config:add","config:del","config:mod"]},
+  {"id":7,"pid":2,"name":"Station","type":0,"path":"/station","pattern":"/station/query/**","open":0,"disabled":0,"hidden":null,"sortNum":2,"icon":"el-icon-s-opportunity","title":"站点管理","breadcrumb":1,"affix":0,"noCache":0,"activeMenu":null,"perm":["station:del","station:mod","station:add"]},
+  {"id":11,"pid":2,"name":"Role","type":0,"path":"/role","pattern":"/role/query**","open":0,"disabled":0,"hidden":null,"sortNum":3,"icon":"el-icon-s-opportunity","title":"角色管理","breadcrumb":1,"affix":0,"noCache":0,"activeMenu":null,"perm":["role:mod","role:add","role:del"]},
+  {"id":15,"pid":2,"name":"Admin","type":0,"path":"/admin","pattern":"/admin/query**","open":0,"disabled":0,"hidden":null,"sortNum":4,"icon":"el-icon-user-solid","title":"管理员列表","breadcrumb":1,"affix":0,"noCache":0,"activeMenu":null,"perm":["admin:mod","admin:add"]}
+]
+console.log("路由列表："+JSON.stringify(rawRoutes))
+
+/*
+
+// 首页
+{
+  path: '/',
+  component: () => import('@/layout/index'),
+  redirect: '/dashboard',
+  children: [
+    { path: 'dashboard', name: 'Dashboard', component: () => import('@/views/dashboard/index'), meta: { title: '仪表盘' } }
+  ]
+},
+// 方式一
+{
+  path: '/profile',
+  component: () => import('@/layout/index'),
+  children: [
+    { path: '', component: () => import('@/views/profile/index')}
+  ]
+},
+// 方式二
+{
+  path: '/guide',
+  component: () => import('@/layout/index'),
+  redirect: '/guide/index',
+  children: [
+    { path: 'index', component: () => import('@/views/guide/index')}
+  ]
+},
+// 多级目录
+{
+  path: '/system', // 一级目录
+  component: () => import('@/layout/index'),
+  name: 'System',
+  children: [
+    {path: 'admin', component: () => import('@/views/admin/index'), name: 'Admin'},
+    {path: 'menu', component: () => import('@/views/menu/index'), name: 'Menu'},
+    // 二级目录
+    {path: 'second_directory', 
+     children: [
+       {path:'file', component: ()=> import('@/views/file/index')}
+     ]
+    }, 
+  ]
+}
+
+*/
+
+
+function loadComponent(suf, debug=true){
+  if(!debug) return suf ? () => import('@/views' + suf) : require("../layout").default
+  return suf ? '@/views' + suf : "../layout"
+}
+
+function pickLastPath(url) {
+	const index = url.lastIndexOf('/')
+	return index !== -1 ? url.substring(index+1):url
+}
+
+function isLeaf(raw) {
+	return raw.type === 0
+}
+
+function isSonOfRoot(raw) {
+	return raw.pid === 0
+}
+
+function isDashboard(tmp) {
+	return tmp.name === 'Dashboard'
+}
+
+function buildMeta(tmp, props=['icon','title','breadcrumb','affix','noCache','activeMenu','perm']) {
+	const meta = {}
+  props.forEach((value,index,array)=>{
+	  meta[value]=tmp[value]
+	  delete tmp[value]
+	})
+  return meta
+}
+
+/**
+ * 格式化路由列表
+ */
+function formatRoutes(rawRoutes) {
+	const fmtRoutes = []
+	
+	rawRoutes.forEach(raw => {
+		
+		const tmp = { ...raw }
+		
+		if(isLeaf(raw)) { // 菜单
+			if(isSonOfRoot(raw)) { // 一级菜单
+				tmp.path = isDashboard(tmp)?'/':raw.path
+				tmp.component = loadComponent()
+				tmp.redirect = isDashboard(tmp)?raw.path:(raw.path + '/index')
+				tmp.children = [{path:pickLastPath(tmp.redirect),component:loadComponent(tmp.redirect),name:tmp.name,meta:buildMeta(tmp)}]
+				delete tmp.name // 名称已经给了 children 所以删除
+			}else{ // 二级以上的菜单
+				tmp.path = pickLastPath(raw.path)
+				tmp.component = loadComponent(raw.path + '/index')
+				tmp.meta = buildMeta(tmp)
+			}
+		}else { // 目录
+			if(isSonOfRoot(raw)) { // 一级目录
+				tmp.component = loadComponent()
+			}else{ // 二级以上的目录
+				// 没有component 但是有 path
+				tmp.path = pickLastPath(raw.path)
+				//...
+			}
+			tmp.meta = buildMeta(tmp)
+			tmp.children = [] // 预置长度为0的children
+		}
+		
+		fmtRoutes.push(tmp)
+		
+	})
+	
+	return fmtRoutes
+}
+
+/**
+ * 路由树（递归）
+ */
+function _buildTree(children, fmtRoutes, pid) {
+	
+	for (let i = 0, len = fmtRoutes.length; i < len; i++) {
+    if (fmtRoutes[i].pid === pid) {
+      children.push(fmtRoutes[i])
+      if(fmtRoutes[i].type === 0) { // 菜单
+      	continue
+      }
+      // 目录才有必要做递归
+      _buildTree(fmtRoutes[i].children, fmtRoutes, fmtRoutes[i].id)
+    }
+  }
+	
+}
+
+/**
+ * 路由树
+ */
+function buildRoutes(rawRoutes) {
+	const fmtRoutes = formatRoutes(rawRoutes)
+	console.log("路由列表(格式化)：" +JSON.stringify(fmtRoutes));
+	const routes = []
+	_buildTree(routes, fmtRoutes, 0)
+	console.log("路由树：" + JSON.stringify(routes));
+}
+
+buildRoutes(rawRoutes)
+
+</script>

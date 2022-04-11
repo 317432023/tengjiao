@@ -1,0 +1,85 @@
+server:
+  port: 8080
+spring:
+  main:
+    lazy-initialization: false # 延时加载 springboot 2.2+ 特性
+    banner-mode: off
+  application:
+    name: tengjiao-seed-admin-sample
+  profiles:
+    active: dev # 环境 dev|test|prod
+  output:
+    ansi:
+      enabled: always
+
+  transaction:
+    rollback-on-commit-failure: true # 开启事务失败回滚
+
+  mvc:
+    throw-exception-if-no-handler-found: true #出现错误时, 直接抛出异常
+    view:
+      suffix: .html
+    # 静态资源访问路径，see also WebConfig.java#addResourceHandlers
+    # static-path-pattern: /**
+
+  resources:
+    # 静态资源默认存放位置
+    #static-locations: classpath:/META-INF/resources/, classpath:/resources/, classpath:/static/, classpath:/public/
+    # ！！！如果工程仅仅作为服务接口可以关闭映射
+    add-mappings: false # 不要为我们工程中的资源文件建立映射
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+    #generator:
+    #  write_numbers_as_strings: true # 将数值类型转换为字符串，解决long型精度丢失
+
+  # 缓存策略
+  cache: # 依赖spring-boot-starter-cache；由 @EnableCaching 开启，支持@CachePut | @CacheEvict | @Cacheable
+    type: redis
+    redis:
+      time-to-live: 3600s
+
+  # 会话存储策略
+  session: # 依赖spring-session-core；由 @EnableRedisHttpSession 开启
+    store-type: redis # redis 或 jdbc
+    timeout: 3600s
+    redis: # 依赖spring-session-data-redis 与 spring-boot-starter-data-redis
+      cleanup-cron: 0 */30 * * * ? # 半小时清理session,cron表达式可以自行百度
+  #  jdbc: # 依赖spring-session-data-jdbc
+  #    cleanup-cron: 0 */30 * * * ?  # 半小时清理session,cron表达式可以自行百度
+  #    table-name: SPRING_SESSION
+  #    initialize-schema: embedded
+  #    schema: classpath:schema-sqlserver.sql # 这个sql文件来自spring-session-jdbc*.jar
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true # 将数据库的带下划线“”给去掉然后映射到实体类的属性上去
+  global-config:
+    banner: false
+    db-config:
+      logic-delete-field: deleted # 全局逻辑删除的实体字段名（自3.3.0，配置后可以忽略不配置实体类字段标注@TableLogic private Integer deleted;）
+      logic-delete-value: 1 # 逻辑已删除值（默认 1）
+      logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
+  # xml扫描，一般这样配置如classpath*:**/mapper/**/*Mapper.xml 多个目录可以用逗号或者分号分隔（告诉 Mapper 所对应的 XML 文件位置）
+  # 若和mapper接口放在同一包下，就不需要特殊指定
+  #mapper-locations: classpath*:**/mapper/*Mapper.xml
+  #type-aliases-package: com.tengjiao.seed.admin.model.sys.entity
+
+####################################
+# 分页插件配置
+####################################
+pagehelper:
+  helperDialect: mysql
+  # 设置为ture时，当pageNum<=0时会查询第一页；pageNum>=pages会查询最后一页
+  reasonable: true
+  params: count=countSql
+  # 支持通过 Mapper 接口参数来传递分页参数，默认值false，分页插件会从查询方法的参数值中，自动根据上面 params 配置的字段中取值，查找到合适的值时就会自动分页
+  support-methods-arguments: true
+
+# 是否开启 mybatis-plus 拦截器中的插件
+tengjiao:
+  mybatisplus-pagination: true # 分页插件
+  mybatisplus-optimistic: false # 乐观锁插件
