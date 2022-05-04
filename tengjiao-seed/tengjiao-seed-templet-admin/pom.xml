@@ -11,6 +11,47 @@
 
     <artifactId>tengjiao-seed-templet-admin</artifactId>
 
+    <properties>
+        <!-- 打包名称 -->
+        <scripts_packageName>${project.artifactId}</scripts_packageName>
+        <!--<scripts_packageName>template-admin</scripts_packageName>-->
+        <!-- 主程序 -->
+        <scripts_bootMain>com.tengjiao.seed.templet.admin.TempletMain</scripts_bootMain>
+    </properties>
+
+    <!-- springboot 打包方式三 -->
+    <profiles>
+        <!-- profile中定义了三个变量 package-name activeProfile boot-main 能被传递到assembly.xml中-->
+        <profile>
+            <id>dev</id>
+            <properties>
+                <!--传递给脚本的参数值-->
+                <activeProfile>dev</activeProfile>
+                <package-name>${scripts_packageName}</package-name>
+                <boot-main>${scripts_bootMain}</boot-main>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>test</id>
+            <properties>
+                <activeProfile>test</activeProfile>
+                <package-name>${scripts_packageName}</package-name>
+                <boot-main>${scripts_bootMain}</boot-main>
+            </properties>
+        </profile>
+        <profile>
+            <id>uat</id>
+            <properties>
+                <activeProfile>uat</activeProfile>
+                <package-name>${scripts_packageName}</package-name>
+                <boot-main>${scripts_bootMain}</boot-main>
+            </properties>
+        </profile>
+    </profiles>
+
     <dependencies>
         <dependency>
             <groupId>com.tengjiao</groupId>
@@ -44,7 +85,7 @@
     </dependencies>
 
     <build>
-        <finalName>${project.artifactId}</finalName>
+        <finalName>${scripts_packageName}</finalName>
         <resources>
             <resource>
                 <directory>src/main/java</directory>
@@ -73,7 +114,7 @@
                 <version>${springboot.version}</version>
                 <configuration>
                     <includeSystemScope>true</includeSystemScope>
-                    <mainClass>com.tengjiao.seed.templet.admin.TempletMain</mainClass>
+                    <mainClass>${scripts_bootMain}</mainClass>
                     <layout>ZIP</layout>
                 </configuration>
                 <executions>
@@ -140,12 +181,14 @@
                         <exclude>**/bootstrap.yml</exclude>
                         <exclude>**/setting.properties</exclude>
                         <exclude>**/rebel.xml</exclude>
+                        <exclude>**/*.sh</exclude>
                     </excludes>
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
                             <useUniqueVersions>false</useUniqueVersions>
+                            <mainClass>${scripts_bootMain}</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -187,7 +230,7 @@
                 <version>${springboot.version}</version>
                 <configuration>
                     <includeSystemScope>true</includeSystemScope>
-                    <mainClass>com.tengjiao.seed.admin.sample.MainApplication</mainClass>
+                    <mainClass>${scripts_bootMain}</mainClass>
                     <!-- 排除所有maven依赖jar -->
                     <includes>
                         <include>
@@ -196,6 +239,7 @@
                         </include>
                     </includes>
                     <layout>ZIP</layout>
+                    <!--<outputDirectory>${boot-jar-output}</outputDirectory>-->
                 </configuration>
                 <executions>
                     <execution>
@@ -207,6 +251,67 @@
             </plugin>
 
         </plugins>
+
+        <!-- springboot 打包方式三 分离配置文件、主程序和依赖库
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <configuration>
+                    <archive>
+                        <addMavenDescriptor>false</addMavenDescriptor>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>${scripts_bootMain}</mainClass>
+                        </manifest>
+                    </archive>
+                    <excludes>
+                        <exclude>**/*.yml</exclude>
+                        <exclude>**/*.properties</exclude>
+                        <exclude>**/*.xml</exclude>
+                        <exclude>**/*.sh</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-a-jar</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>bak</classifier>
+                            <classesDirectory>${project.build.directory}/</classesDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>${project.basedir}/src/main/assembly/assembly.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+         -->
+
 
     </build>
 

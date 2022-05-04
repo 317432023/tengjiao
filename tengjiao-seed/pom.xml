@@ -16,7 +16,7 @@
   <modules>
     <module>tengjiao-seed-admin</module>
     <module>tengjiao-seed-member</module>
-    <!--<module>tengjiao-seed-templet-admin</module>-->
+    <module>tengjiao-seed-templet-admin</module>
   </modules>
 
   <dependencyManagement>
