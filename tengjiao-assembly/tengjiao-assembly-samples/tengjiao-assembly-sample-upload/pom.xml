@@ -41,7 +41,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring-boot.version}</version>
+                <version>${springboot.version}</version>
                 <configuration>
                     <mainClass>com.tengjiao.assembly.sample.upload.UploadSampleMain</mainClass>
                     <layout>ZIP</layout>

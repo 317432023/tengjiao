@@ -27,6 +27,9 @@ import java.util.Properties;
 /**
  * 乐观锁：数据版本插件 <br>
  * 注意：开启此插件会有一定的性能损耗<br>
+ *     需要在实体类和表结构中都定义version属性和字段才能使用此插件<br>
+ *     旧版和新版jsqlparser有差异，见 buildVersionExpression 方法 ：update.getUpdateSets().add(new UpdateSet(versionColumn, add)); // 新版 jsqlparser 4.0 + <br>
+ *     尽量避免和mybatisplus 的乐观锁功能同时使用(未验证是否会起冲突)<br>
  *     使用插件<br>
  * 方法一；
  *      直接在此插件上加 @Component 注解
@@ -43,7 +46,7 @@ import java.util.Properties;
  *         };
  *     }
  * }
- * 方法三：
+ * 方法三：(该方法经过验证可用)
  * application.properties内容：
  * mybatis:
  *   config-location: classpath:mybatis.xml
@@ -60,7 +63,7 @@ import java.util.Properties;
  *     </typeAliases>
  *     <plugins>
  *         <plugin interceptor="me.zingon.pagehelper.interceptor.MyPageInterceptor">
- *             <property name="dialect" value="oracle"/>
+ *             <property name="dialect" value="mysql"/>
  *         </plugin>
  *     </plugins>
  * </configuration>
@@ -93,8 +96,13 @@ public class VersionInterceptor implements Interceptor {
             return invocation.proceed();
         }
         // 获取版本号
-        Object originalVersion = metaObject.getValue("delegate.boundSql.parameterObject." + VERSION_COLUMN_NAME);
-        if(originalVersion == null || Long.valueOf(originalVersion.toString()) <= 0){
+        Object originalVersion = null;
+        try {
+            originalVersion = metaObject.getValue("delegate.boundSql.parameterObject." + VERSION_COLUMN_NAME);
+        } catch (Exception e) {
+            //ignore
+        }
+        if(originalVersion == null){
             return invocation.proceed();
         }
         // 获取绑定的SQL
@@ -157,7 +165,7 @@ public class VersionInterceptor implements Interceptor {
                 return originalSql;
             }
             Update update = (Update)stmt;
-            if(containsVersion(update)){
+            if(!containsVersion(update)){
                 buildVersionExpression(update);
             }
             Expression where = update.getWhere();
@@ -175,7 +183,8 @@ public class VersionInterceptor implements Interceptor {
     }
 
     private boolean containsVersion(Update update){
-        List<Column> columns = update.getColumns();
+        List<Column> columns = update.getColumns(); // 旧版 jsqlparser 4.0 以下
+        //List<Column> columns = update.getUpdateSets().get(0).getColumns(); // 新版 jsqlparser 4.0 +
         for(Column column : columns){
             if(column.getColumnName().equalsIgnoreCase(VERSION_COLUMN_NAME)){
                 return true;
@@ -184,19 +193,30 @@ public class VersionInterceptor implements Interceptor {
         return false;
     }
 
+    /**
+     * 修改update set语句，往里面加入 version = version + 1
+     * @param update
+     */
     private void buildVersionExpression(Update update){
         // 列 version
         Column versionColumn = new Column();
         versionColumn.setColumnName(VERSION_COLUMN_NAME);
-        update.getColumns().add(versionColumn);
 
         // 值 version+1
         Addition add = new Addition();
         add.setLeftExpression(versionColumn);
         add.setRightExpression(new LongValue(1));
-        update.getExpressions().add(add);
+
+        update.getColumns().add(versionColumn); // 旧版 jsqlparser 4.0 以下
+        update.getExpressions().add(add); // 旧版 jsqlparser 4.0 以下
+
+        //update.getUpdateSets().add(new UpdateSet(versionColumn, add)); // 新版 jsqlparser 4.0 + cai
     }
 
+    /**
+     * 构建(相等)条件表达式
+     * @param originalVersion
+     */
     private Expression buildVersionEquals(Object originalVersion){
         Column column = new Column();
         column.setColumnName(VERSION_COLUMN_NAME);
