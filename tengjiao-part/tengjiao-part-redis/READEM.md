@@ -18,7 +18,8 @@ spring:
     redisson:
       enable: true
       ## redisson-*.yml 示例文件见 doc 目录
-      #config: classpath:config/redisson-single.yml
+      #config-file:
+      #  yaml: classpath:config/redisson-single.yml
       config: |
         singleServerConfig:
           idleConnectionTimeout: 10000
