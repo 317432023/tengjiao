@@ -9,6 +9,9 @@ import com.tengjiao.seed.admin.security.config.SettingProperties;
 import com.tengjiao.tool.third.json.FastJsonTool;
 import com.tengjiao.tool.third.json.JackJsonTool;
 import lombok.AllArgsConstructor;
+import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +37,28 @@ import java.util.*;
 
 /**
  * @author Administrator
+ * <p> 关于日期转换
+ * spring 将前端 json 转后端 pojo 底层使用的是Json序列化Jackson工具（HttpMessgeConverter）
+ * spring 而时间日期字符串作为普通请求参数传入时，转换用的是 Converter
+ * 两者在处理方式上有区别。
+ *
+ * 后端 接收前端(非 JSON ) 请求传递 Date 的格式 配置
+ *      * spring.mvc.date-format=yyyy-MM-dd HH:mm:ss                                   仅适用于 GET DELETE 请求
+ *      * 或者直接在接收的请求参数中标注 @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")  仅适用于 GET DELETE 请求
+ *      * 使用自定义参数转换器 参见 CustomDateConverter                                   仅适用于 POST PUT PATCH 请求
+ *      * 或者 使用 ControllerAdvice 配合 initBinder，参见 ERP 的控制器基类 BaseController 仅适用于 POST PUT PATCH 请求
+ *      * 支持java8日期api
+ *
+ * 后端 接收和响应 前端 JSON (spring jackson) 体的 日期序列化 格式 配置
+ *      * spring.jackson.time-zone=GMT+8
+ *        spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+ *        spring.jackson.serialization.write-dates-as-timestamps=false
+ *      * 或者直接在响应对象日期类型属性中标注 @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss" , timezone = "GMT+8")
+ *      * 不支持java8日期api，要求输入和输出使用统一的格式
+ *      * 重写 Jackson的JSON序列化和反序列化 行为 适合大型项目在基础包中全局设置 见 JackJsonTool.makeCustomObjectMapper()
+ *
+ * https://www.csdn.net/tags/MtjaggxsNzU0NTUtYmxvZwO0O0OO0O0O.html
+ * </p>
  */
 @Configuration
 @AllArgsConstructor
@@ -155,7 +180,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     /**
      * JackJson 序列化器
-     */
+     *
+     * 使用此方法, 以下 spring-boot: jackson 全局日期格式化 配置 将会失效 详见 JackJsonTool.makeCustomObjectMapper()
+     * spring.jackson.time-zone=GMT+8
+     * spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+     * 原因: 会覆盖 @EnableAutoConfiguration 关于 WebMvcAutoConfiguration 的配置
+     * */
     @Bean
     public MappingJackson2HttpMessageConverter getMappingJackson2HttpMessageConverter() {
         MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter = new MappingJackson2HttpMessageConverter();
@@ -197,10 +227,8 @@ public class WebConfig implements WebMvcConfigurer {
     }*/
 
     /**
-     * 表单全局日期转换器，仅针对请求头为 Content-Type 为 application/x-www-form-urlencoded；
-     * 注：若要对请求头 Content-Type 为 application/json 类型的，有两种方法：
-     * 1\使用 spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
-     * 2\或者直接在请求体中标注 如 @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd" , timezone = "GMT+8")
+     * 注意：仅针对 普通字符串（非 JSON ）的 提交
+     * spring 接收 请求全局日期转换器，仅针对请求头为 Content-Type 为 application/x-www-form-urlencoded
      */
     @Bean
     public CustomDateConverter customDateConverter() {
@@ -212,8 +240,50 @@ public class WebConfig implements WebMvcConfigurer {
         ConversionServiceFactoryBean factoryBean = new ConversionServiceFactoryBean();
         Set<Converter<String, Date>> converters = new HashSet<>();
         converters.add(customDateConverter());
+        // converters.add(customJava8DateConverter()); //  包括 LocalDate LocalDateTime LocalTime 三个对象(java8)
         factoryBean.setConverters(converters);
         return factoryBean.getObject();
+    }
+
+    /**
+     * 解决文件名中含有":\\"等特殊字符时，接口400的问题
+     *      Tomcat在 7.0.73, 8.0.39, 8.5.7 版本后，，添加了对于http头的验证。就是严格按照 RFC 3986规范进行访问解析，而 RFC 3986规范定义了Url中只允许包含英文字母（a-zA-Z）、数字（0-9）、-_.~4个特殊字符
+     *      以及所有保留字符(RFC3986中指定了以下字符为保留字符：! * ' ( ) ; : @ & = + $ , / ? # [ ])。
+     *
+     * <p>
+     *  java.lang.IllegalArgumentException:
+     *    Invalid character found in the request target. The valid characters are defined in RFC 7230 and RFC 3986.
+     * </p>
+     * 对于Get请求还可以通过以下方法解决，这种方法不需要配置 relaxedQueryChars，但是较繁琐
+     * <p>
+     *      var name = "张三:";
+     *      name = encodeURIComponent(name);
+     *      name = encodeURIComponent(name);//二次编码
+     *      //alert(name);
+     *      url = url + "?name="+name;
+     *      window.location.href = url;
+     *
+     *     @GetMapping("/test")
+     *     public String test(@RequestParam("name") String name) throws UnsupportedEncodingException{
+     *         name = URLDecoder.decode(name, "UTF-8");
+     *         System.out.println(name);
+     *         return "index";
+     *     }
+     * </p>
+     * 总结：最简单的方法是配置服务器（在 application.properties 中添加一行）server.tomcat.relaxed-query-chars=<>[\]^`{|}:
+     * @return
+     */
+    @Bean
+    public WebServerFactoryCustomizer<TomcatServletWebServerFactory> containerCustomizer(){
+        return new WebServerFactoryCustomizer<TomcatServletWebServerFactory>() {
+            @Override
+            public void customize(TomcatServletWebServerFactory factory) {
+                factory.addConnectorCustomizers((TomcatConnectorCustomizer) connector -> {
+                    connector.setAttribute("relaxedPathChars", "<>[\\]^`{|}:");
+                    connector.setAttribute("relaxedQueryChars", "<>[\\]^`{|}:");
+                });
+            }
+        };
     }
 
 }

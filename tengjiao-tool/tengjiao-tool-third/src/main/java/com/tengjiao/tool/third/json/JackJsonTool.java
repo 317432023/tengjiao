@@ -8,6 +8,13 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import com.tengjiao.tool.indep.DateTool;
 import com.tengjiao.tool.indep.StringTool;
 
@@ -16,6 +23,10 @@ import java.math.BigInteger;
 import java.text.FieldPosition;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -123,13 +134,33 @@ public class JackJsonTool {
             }
         };
 
-        // JSON全局日期转换器
-        // 设置日期格式
+        // JSON 转化器
         ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+        // 忽略无法转换的对象
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        // PrettyPrinter 格式化输出
+        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        // 忽略json字符串中不识别的属性
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.setDateFormat(CustomDateFormat.instance);
+        // NULL不参与序列化   ：JsonInclude.Include.NON_NULL
+        // NULL总是参与序列化 : JsonInclude.Include.ALWAYS
         objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        // 设定日期序列化 使用的对象 自定义的 JSON全局日期转换器 CustomDateFormat
+        objectMapper.setDateFormat(CustomDateFormat.instance);
+        // 取消timestamps形式 spring.jackson.serialization.write-dates-as-timestamps=false，一般指定了 DateFormat 就可以了
+        //objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        // 指定时区
+        objectMapper.setTimeZone(TimeZone.getTimeZone("GMT+8:00"));
+
+        // java8 日期处理
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        javaTimeModule.addSerializer(LocalDate.class, new LocalDateSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        javaTimeModule.addSerializer(LocalTime.class, new LocalTimeSerializer(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        javaTimeModule.addDeserializer(LocalDate.class, new LocalDateDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        javaTimeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer(DateTimeFormatter.ofPattern("HH:mm:ss")));
 
         // 为mapper注册一个带有SerializerModifier的Factory，此modifier主要做的事情为：当序列化类型为array，list、set时，当值为空时，序列化成[]
         objectMapper.setSerializerFactory(objectMapper.getSerializerFactory().withSerializerModifier(new BeanSerializerModifier(){
@@ -157,7 +188,9 @@ public class JackJsonTool {
         /*
          * 序列换成json时,将所有的long变成string
          * 因为js中得数字类型不能包含所有的java long值
-         * 另一种方法是在 每个long字段上面指定标注 @JSONField(serializeUsing= ToStringSerializer.class) @JsonSerialize(using=ToStringSerializer.class)
+         * 另一种方法是在 每个long字段上面指定标注
+         * albaba fastjson 使用 => @JSONField(serializeUsing= ToStringSerializer.class)
+         * jackjson        使用 => @JsonSerialize(using=ToStringSerializer.class) 或 @JsonFormat(shape = JsonFormat.Shape.STRING)
          */
         objectMapper.registerModule(
           new SimpleModule()

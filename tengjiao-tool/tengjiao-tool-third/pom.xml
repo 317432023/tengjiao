@@ -69,6 +69,12 @@
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>
     </dependency>
+    <!-- jackson for json java8 日期转换支持 -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+      <version>${jackson.version}</version><!--2.12.3-->
+    </dependency>
 
     <!-- gson for json -->
     <dependency>
